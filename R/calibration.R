@@ -91,7 +91,7 @@ make_drift_set_from_values <- function(drift_hr_values,
     }
   }
   ok <- which(is.finite(v) & v <= alpha_cal)
-  if (length(ok) == 0) NA_real_ else summary_tbl$lambda[max(ok)]
+  if (length(ok) == 0) NA_real_ else max(summary_tbl$lambda[ok])
 }
 
 #' Build a refined log-spaced lambda grid around the calibrated lambda
@@ -228,6 +228,7 @@ make_drift_set_from_values <- function(drift_hr_values,
   sc <- scenario_base
   sc$theta0 <- 0
   sc$delta0 <- delta0
+  sc <- .resolve_censoring(sc)
   zcrit <- stats::qnorm(alpha)
 
   sim_one <- function(s) {
@@ -236,7 +237,8 @@ make_drift_set_from_values <- function(drift_hr_values,
       theta0 = sc$theta0, delta0 = sc$delta0,
       p = sc$p, beta = sc$beta, rho = sc$rho,
       cov_shift = sc$cov_shift, shape = sc$shape,
-      lambda = sc$lambda, target_cens = sc$target_cens
+      lambda = sc$lambda, target_cens = sc$target_cens,
+      censor_rate = sc$censor_rate
     )
     .calibration_rejects_for_dataset(
       dat = sim$data,

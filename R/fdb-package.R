@@ -29,12 +29,12 @@
 #' The package implements four likelihood-informed penalties together
 #' with the adaptive lasso comparator of Li et al. (2023):
 #' \itemize{
-#'   \item \strong{LiAdaptiveLasso}: adaptive lasso (Li et al. 2023).
-#'   \item \strong{P1_SEScaledL1}: precision-weighted L1 penalty.
-#'   \item \strong{P2_GatedL1}: smoothed integrated-gate penalty.
-#'   \item \strong{P3_SEScaledMCP}: information-adaptive minimax
+#'   \item \strong{Adaptive lasso}: adaptive lasso (Li et al. 2023).
+#'   \item \strong{Precision-weighted L1}: precision-weighted L1 penalty.
+#'   \item \strong{Integrated-gate}: smoothed integrated-gate penalty.
+#'   \item \strong{Information-adaptive MCP}: information-adaptive minimax
 #'     concave penalty (MCP).
-#'   \item \strong{P4_LRWeightedL1}: likelihood-ratio-weighted L1
+#'   \item \strong{LR-weighted L1}: likelihood-ratio-weighted L1
 #'     penalty.
 #' }
 #'
@@ -84,10 +84,9 @@
 #' @importFrom parallel stopCluster
 #' @importFrom utils sessionInfo
 #' @importFrom utils write.csv
-#' @docType package
 #' @name fdb-package
 #' @aliases fdb
-NULL
+"_PACKAGE"
 
 # Global numerical constants ---------------------------------------------
 

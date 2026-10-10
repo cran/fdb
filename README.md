@@ -17,11 +17,11 @@ adaptive lasso comparator of Li et al. (2023):
 
 | Tag                 | Penalty                                              | Description                                     |
 | ------------------- | ---------------------------------------------------- | ----------------------------------------------- |
-| `LiAdaptiveLasso`   | \( \lambda |\hat\delta_0|^{-\gamma} |\delta| \)      | Adaptive lasso (Li et al. 2023)                 |
-| `P1_SEScaledL1`     | \( \lambda |\delta| / \widehat{SE}(\hat\delta_0) \)  | Precision-weighted L1                           |
-| `P2_GatedL1`        | \( \lambda\int_0^{|\delta|}g(u/\widehat{SE})\,du \)| Smoothed integrated-gate                        |
-| `P3_SEScaledMCP`    | \( MCP(\delta; \lambda/\widehat{SE}, \gamma_{MCP}) \)| Information-adaptive minimax concave penalty    |
-| `P4_LRWeightedL1`   | \( \lambda |\delta| \exp\{-\tfrac{1}{2}LR_0\} \)     | Likelihood-ratio-weighted L1                    |
+| `Adaptive lasso`   | \( \lambda |\hat\delta_0|^{-\gamma} |\delta| \)      | Adaptive lasso (Li et al. 2023)                 |
+| `Precision-weighted L1`     | \( \lambda |\delta| / \widehat{SE}(\hat\delta_0) \)  | Precision-weighted L1                           |
+| `Integrated-gate`        | \( \lambda\int_0^{|\delta|}g(u/\widehat{SE})\,du \)| Smoothed integrated-gate                        |
+| `Information-adaptive MCP`    | \( MCP(\delta/\widehat{SE}; \lambda, \gamma_{MCP}) \)| Information-adaptive minimax concave penalty    |
+| `LR-weighted L1`   | \( \lambda |\delta| \exp\{-\tfrac{1}{2}LR_0\} \)     | Likelihood-ratio-weighted L1                    |
 
 All penalties operate on a smoothed absolute-value primitive
 \(|\delta|_\varepsilon = \sqrt{\delta^2 + \varepsilon^2}\), so the resulting
@@ -32,13 +32,31 @@ is not guaranteed. Negative P2/P3 curvature is clipped only for the variance
 calculation; raw curvature remains available as `pen_curv_raw`.
 
 P2 integrates the gate from `eps` to `sqrt(delta^2 + eps^2)`. MCP integrates
-a C1 slope from zero to `sqrt(delta^2 + eps^2) - eps`, smoothing both the
+a C1 slope from zero to `(sqrt(delta^2 + eps^2) - eps) / se_delta`, smoothing both the
 origin and the flat-tail transition. Set `rho_mcp` in direct fits, calibration,
 or `run_fdb_study`, or in the tuning list passed to `run_simulation`.
 Its software default is 0.1; it is not a calibrated manuscript value.
-Existing function names and method tags are retained for compatibility.
+Existing function names and short calibration keys (`Li`, `P1`--`P4`) are
+retained for compatibility. Result method labels use the manuscript names;
+`method_labels()` translates short keys and legacy result tags.
 Both P2 and P3 results and calibrated lambdas from the old definitions
 need recomputation. No-covariate studies are supported with `p = 0`.
+
+## Independent censoring
+
+`simulate_hybrid_cox()` uses a fixed exponential censoring rate calculated from
+the internal population distribution, not from realized replicate event times.
+`calibrate_censor_rate()` performs deterministic numerical integration and does
+not consume random numbers. An explicit `censor_rate` overrides `target_cens`;
+zero gives no censoring. The target is for the combined internal population,
+not each treatment arm or the external group separately.
+
+Simulation and calibration drivers resolve the rate before generating replicates.
+An explicitly supplied rate stays fixed even if a wrapper changes `theta0`.
+Omit it to calculate the rate for each treatment-effect scenario, or supply
+separate null and alternative rates as the manuscript simulation script does.
+Both calibration and evaluation should be rerun under this generator; do not
+mix results or calibrated lambdas from earlier generator versions.
 
 ## Installation
 
@@ -46,7 +64,7 @@ From a local source build:
 
 ```r
 # install.packages("remotes")
-remotes::install_local("fdb_0.2.0.tar.gz", dependencies = TRUE)
+remotes::install_local("fdb_0.2.2.tar.gz", dependencies = TRUE)
 ```
 
 ## Quick start

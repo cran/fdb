@@ -12,6 +12,8 @@
 #'   \code{nI1}, \code{nI0}, \code{nE}, \code{theta0}, \code{delta0},
 #'   \code{p}, \code{beta}, \code{rho}, \code{cov_shift},
 #'   \code{shape}, \code{lambda}, and \code{target_cens}.
+#'   An optional \code{censor_rate} fixes the rate; otherwise it is
+#'   calculated before generating replicates from the internal population.
 #'   See \code{\link{scenario_S1}} for an example.
 #' @param lambdas A list of tuning parameters with elements
 #'   \code{lambda_li}, \code{gamma_li}, \code{lambda_p1},
@@ -64,6 +66,7 @@ run_simulation <- function(nsim = 200,
             nsim > 0, alpha > 0, alpha < 1)
 
   .validate_count(nsim, "nsim", 2L)
+  scenario <- .resolve_censoring(scenario)
 
   if (!is.null(seed)) {
     if (parallel) {
@@ -84,7 +87,8 @@ run_simulation <- function(nsim = 200,
       theta0 = scenario$theta0, delta0 = scenario$delta0,
       p = scenario$p, beta = scenario$beta, rho = scenario$rho,
       cov_shift = scenario$cov_shift, shape = scenario$shape,
-      lambda = scenario$lambda, target_cens = scenario$target_cens
+      lambda = scenario$lambda, target_cens = scenario$target_cens,
+      censor_rate = scenario$censor_rate
     )
     dat <- sim$data
 
@@ -154,7 +158,7 @@ run_simulation <- function(nsim = 200,
 #' @param NS Reference sample-size scale. The study wrappers use the total
 #'   internal randomized sample size, \code{nI1 + nI0}.
 #' @param ref_method Name of the reference method (default
-#'   \code{"InternalOnly"}).
+#'   \code{"Internal-only"}).
 #' @param methods_exclude Optional character vector of methods to
 #'   exclude from the output.
 #' @return A data frame with \code{method} and \code{ESS} columns. ESS is a
@@ -168,7 +172,7 @@ run_simulation <- function(nsim = 200,
 #' @export
 compute_ess_from_raw <- function(raw_df,
                                  NS,
-                                 ref_method = "InternalOnly",
+                                 ref_method = "Internal-only",
                                  methods_exclude = NULL) {
   stopifnot(all(c("method", "theta_hat") %in% names(raw_df)))
   if (!ref_method %in% raw_df$method) {
@@ -203,12 +207,12 @@ compute_ess_from_raw <- function(raw_df,
 #' @param simres Output of \code{\link{run_simulation}}.
 #' @param NS Reference sample-size scale. The study wrappers use the total
 #'   internal randomized sample size, \code{nI1 + nI0}.
-#' @param ref_method Reference method (default \code{"InternalOnly"}).
+#' @param ref_method Reference method (default \code{"Internal-only"}).
 #' @return The same \code{simres} list with an \code{ESS} column
 #'   merged into its \code{summary} component.
 #' @export
 add_ess_to_simulation_result <- function(simres, NS,
-                                         ref_method = "InternalOnly") {
+                                         ref_method = "Internal-only") {
   ess_tbl <- compute_ess_from_raw(simres$raw, NS = NS,
                                   ref_method = ref_method)
   simres$summary <- merge(simres$summary, ess_tbl, by = "method", all.x = TRUE)

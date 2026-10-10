@@ -7,7 +7,8 @@
 #' evidence-gated penalties (notably the gated L1 (P2) and MCP (P3)
 #' penalties), a coarse grid is evaluated first, the best grid point
 #' is chosen, and \code{stats::optimize} is then run over the
-#' neighboring interval.
+#' neighboring interval. With additional search points (used by P3),
+#' all detected local minima of the augmented grid are refined.
 #'
 #' @param dat A data frame with columns \code{time}, \code{status},
 #'   \code{T}, \code{Z}, and covariates named in \code{xnames}.
@@ -16,17 +17,20 @@
 #' @param delta_bounds Numeric vector of length 2, \code{(lower, upper)}.
 #' @param robust If \code{TRUE}, use robust SEs from \code{coxph}.
 #' @param n_grid Number of grid points for the coarse search. Use
-#'   \code{n_grid <= 1} to disable grid-assisted search.
+#'   \code{n_grid <= 1} to disable grid-assisted search when search_points is NULL.
+#' @param search_points Optional additional grid points. When supplied, refine
+#'   every detected local minimum instead of only the best regular grid point.
 #' @return A list with the optimized \code{delta_hat}, profiled
 #'   estimates \code{theta_hat}, \code{se_theta}, \code{beta_hat},
 #'   the profile log-likelihood \code{loglik}, the optimum objective
 #'   value \code{opt_obj}, and the number of grid points used.
 #' @keywords internal
+#' @importFrom utils head tail
 #' @noRd
 optimize_delta <- function(dat, xnames, obj_fn,
                            delta_bounds = DEFAULT_DELTA_BOUNDS,
                            robust = FALSE,
-                           n_grid = 1) {
+                           n_grid = 1, search_points = NULL) {
   if (length(delta_bounds) != 2 || !all(is.finite(delta_bounds)) ||
       delta_bounds[1] >= delta_bounds[2]) {
     stop("delta_bounds must be a finite increasing vector of length 2")
@@ -39,11 +43,15 @@ optimize_delta <- function(dat, xnames, obj_fn,
     if (!is.finite(val)) Inf else val
   }
 
-  if (is.na(n_grid) || n_grid <= 1) {
+  if ((is.na(n_grid) || n_grid <= 1) && is.null(search_points)) {
     opt <- stats::optimize(safe_obj, interval = delta_bounds)
   } else {
-    n_grid <- max(3L, n_grid)
+    n_grid <- if (is.na(n_grid)) 3L else max(3L, n_grid)
     grid <- seq(delta_bounds[1], delta_bounds[2], length.out = n_grid)
+    if (!is.null(search_points)) {
+      grid <- sort(unique(c(grid, search_points[is.finite(search_points) &
+        search_points >= delta_bounds[1] & search_points <= delta_bounds[2]])))
+    }
     vals <- vapply(grid, safe_obj, numeric(1))
 
     finite_idx <- which(is.finite(vals))
@@ -52,16 +60,29 @@ optimize_delta <- function(dat, xnames, obj_fn,
     }
 
     best_idx <- finite_idx[which.min(vals[finite_idx])]
-    lo_idx <- max(1L, best_idx - 1L)
-    hi_idx <- min(length(grid), best_idx + 1L)
-    local_interval <- c(grid[lo_idx], grid[hi_idx])
-
-    if (local_interval[1] == local_interval[2]) {
-      opt <- list(minimum = grid[best_idx], objective = vals[best_idx])
+    if (!is.null(search_points)) {
+      local_idx <- which(is.finite(vals) & vals <= c(Inf, head(vals, -1L)) &
+                           vals <= c(tail(vals, -1L), Inf))
+      candidates <- lapply(local_idx, function(i) {
+        interval <- grid[c(max(1L, i - 1L), min(length(grid), i + 1L))]
+        stats::optimize(safe_obj, interval = interval)
+      })
+      candidates <- c(candidates, list(list(minimum = grid[best_idx],
+                                            objective = vals[best_idx])))
+      opt <- candidates[[which.min(vapply(candidates, function(x) x$objective,
+                                          numeric(1)))]]
     } else {
-      opt <- stats::optimize(safe_obj, interval = local_interval)
-      if (!is.finite(opt$objective) || vals[best_idx] < opt$objective) {
+      lo_idx <- max(1L, best_idx - 1L)
+      hi_idx <- min(length(grid), best_idx + 1L)
+      local_interval <- c(grid[lo_idx], grid[hi_idx])
+
+      if (local_interval[1] == local_interval[2]) {
         opt <- list(minimum = grid[best_idx], objective = vals[best_idx])
+      } else {
+        opt <- stats::optimize(safe_obj, interval = local_interval)
+        if (!is.finite(opt$objective) || vals[best_idx] < opt$objective) {
+          opt <- list(minimum = grid[best_idx], objective = vals[best_idx])
+        }
       }
     }
   }

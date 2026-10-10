@@ -352,10 +352,10 @@ scale. Penalizing drift toward zero introduces borrowing.</p>
 <span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>                           <span class="at">theta0 =</span> <span class="fu">log</span>(<span class="fl">0.8</span>), <span class="at">delta0 =</span> <span class="fu">log</span>(<span class="fl">1.1</span>), <span class="at">p =</span> <span class="dv">0</span>)<span class="sc">$</span>data</span>
 <span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="fu">head</span>(dat)</span>
 <span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="co">#&gt;        time status T Z</span></span>
-<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="co">#&gt; 1 45.062050      1 1 0</span></span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="co">#&gt; 1 36.877184      0 1 0</span></span>
 <span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="co">#&gt; 2  1.650595      1 1 0</span></span>
 <span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a><span class="co">#&gt; 3 19.001591      1 1 0</span></span>
-<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a><span class="co">#&gt; 4 54.766561      1 1 0</span></span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a><span class="co">#&gt; 4  9.760740      0 1 0</span></span>
 <span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a><span class="co">#&gt; 5  7.245401      1 1 0</span></span>
 <span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a><span class="co">#&gt; 6  2.087950      1 1 0</span></span></code></pre></div>
 <p>The no-covariate model uses <code>p = 0</code>. Direct fitting
@@ -365,23 +365,26 @@ covariates named <code>X1</code>, <code>X2</code>, and so on.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">fit_one_penalized_method</span>(dat, <span class="at">method =</span> <span class="st">&quot;P1&quot;</span>, <span class="at">lambda =</span> <span class="fl">0.2</span>)</span>
 <span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>fit[<span class="fu">c</span>(<span class="st">&quot;method&quot;</span>, <span class="st">&quot;theta_hat&quot;</span>, <span class="st">&quot;delta_hat&quot;</span>, <span class="st">&quot;se_theta&quot;</span>, <span class="st">&quot;se_sand&quot;</span>)]</span>
 <span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="co">#&gt; $method</span></span>
-<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="co">#&gt; [1] &quot;P1_SEScaledL1&quot;</span></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="co">#&gt; [1] &quot;Precision-weighted L1&quot;</span></span>
 <span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="co">#&gt; </span></span>
 <span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="co">#&gt; $theta_hat</span></span>
-<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="co">#&gt; [1] 0.196989</span></span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="co">#&gt; [1] 0.2245691</span></span>
 <span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a><span class="co">#&gt; </span></span>
 <span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a><span class="co">#&gt; $delta_hat</span></span>
-<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a><span class="co">#&gt; [1] 0.2790806</span></span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a><span class="co">#&gt; [1] 0.3460733</span></span>
 <span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a><span class="co">#&gt; </span></span>
 <span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a><span class="co">#&gt; $se_theta</span></span>
-<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a><span class="co">#&gt; [1] 0.1920929</span></span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a><span class="co">#&gt; [1] 0.2186544</span></span>
 <span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a><span class="co">#&gt; </span></span>
 <span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a><span class="co">#&gt; $se_sand</span></span>
-<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a><span class="co">#&gt; [1] 0.233306</span></span></code></pre></div>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a><span class="co">#&gt; [1] 0.266931</span></span></code></pre></div>
 <p>This tuning value illustrates the API; it has not been calibrated.
 <code>fit_all_methods(dat)</code> compares internal-only, pooled, Li,
-and P1–P4 fits. P2 uses the integrated gate and P3 uses smoothed MCP.
-Record <code>eps</code>, <code>rho_mcp</code>, penalty parameters and
+and P1–P4 fits. P2 uses the integrated gate and P3 applies smoothed MCP
+to standardized drift <code>delta / se_delta</code> (since 0.2.2). Its
+transition width is in SE units, while <code>eps</code> is in log-HR
+units. Previous P3 calibrations must be replaced. Record
+<code>eps</code>, <code>rho_mcp</code>, penalty parameters and
 optimization bounds with results.</p>
 </div>
 <div id="interpret-uncertainty" class="section level2">
